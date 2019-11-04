@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">CafeOM</string>
+    <string name="StartCooking">Սկսել</string>
+    <string name="Ready">Պատրաստ է</string>
+    <string name="Cooking">Խոհանոց</string>
+    <string name="Enter">Մուտք</string>
+    <string name="Password">Գախտնաբար</string>
+    <string name="ServerAddress">Սերվերի հասցե</string>
+    <string name="ServerPort">Սերվերի պորտ</string>
+    <string name="Save">Պահպանել</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_play_music">PlayMusicActivity</string>
+</resources>
