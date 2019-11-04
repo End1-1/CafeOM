@@ -21,13 +21,6 @@
             android:theme="@style/AppTheme.NoActionBar"></activity>
         <activity android:name=".Config" />
 
-        <receiver android:name=".BroadcastListener">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-            </intent-filter>
-        </receiver>
-
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -36,10 +29,6 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name=".Listener"
-            android:enabled="true"
-            android:exported="true" />
     </application>
 
 </manifest>

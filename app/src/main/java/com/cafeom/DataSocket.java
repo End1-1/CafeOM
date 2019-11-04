@@ -14,6 +14,11 @@ import java.nio.ByteOrder;
 
 public class DataSocket extends AsyncTask {
 
+    public interface DataReceiver {
+        void socketReply(int requestCode, String s, int code);
+    }
+
+    public DataReceiver mDataReceiver;
     private Context mContext;
     private String mMessage;
     private int mReplyCode;
@@ -23,6 +28,7 @@ public class DataSocket extends AsyncTask {
         mContext = context;
         mMessage = s;
         mRequestCode = requestCode;
+        mDataReceiver = null;
     }
 
     @Override
@@ -34,7 +40,7 @@ public class DataSocket extends AsyncTask {
         }
         try {
             Socket s = new Socket();
-            s.setSoTimeout(5000);
+            s.setSoTimeout(3000);
             s.connect(new InetSocketAddress(Cnf.getString(mContext, "server_address"), Integer.valueOf(Cnf.getString(mContext, "server_port"))));
             OutputStream dos = s.getOutputStream();
             ByteBuffer bb = ByteBuffer.allocate(4);
@@ -63,6 +69,7 @@ public class DataSocket extends AsyncTask {
                 mMessage += new String(bbb, 0, pt);
             }
             mReplyCode = mMessage.length();
+            s.close();
         } catch (IOException e) {
             e.printStackTrace();
             mMessage = e.getMessage();
@@ -74,9 +81,13 @@ public class DataSocket extends AsyncTask {
     @Override
     protected void onPostExecute(Object o) {
         super.onPostExecute(o);
-        if (mContext != null) {
-            MainActivity ma = (MainActivity) mContext;
-            ma.socketReply(mRequestCode, mMessage, mReplyCode);
+        if (mDataReceiver != null) {
+            mDataReceiver.socketReply(mRequestCode, mMessage, mReplyCode);
+        } else {
+            if (mContext != null) {
+                MainActivity ma = (MainActivity) mContext;
+                ma.socketReply(mRequestCode, mMessage, mReplyCode);
+            }
         }
     }
 }

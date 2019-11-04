@@ -1,14 +1,11 @@
 package com.cafeom;
 
-import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.database.Cursor;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.view.View;
@@ -19,7 +16,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -36,7 +32,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     ArrayList<CookItem> mCookItems = new ArrayList<>();
     DishAdapters mDishAdapter;
-    private MessageReceiver mMessageReceiver;
     protected PowerManager.WakeLock mWakeLock;
     private MediaPlayer mMediaPlayer = null;
 
@@ -49,14 +44,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //Cnf.setString(this, "cnf_password", "111");
         //Cnf.setString(this, "server_address", "10.1.0.2");
         //Cnf.setString(this, "server_port", "888");
-        mMessageReceiver = new MessageReceiver();
         NotificationSender.cancelAll(this);
-        Intent pushIntent = new Intent(this, Listener.class);
-        if (Build.VERSION.SDK_INT >= 26) {
-            startForegroundService(pushIntent);
-        } else {
-            startService(pushIntent);
-        }
 
         RecyclerView rv = findViewById(R.id.rvDishes);
         mDishAdapter = new DishAdapters();
@@ -67,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         final PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "com.cafeom:wakeeetag");
         mWakeLock.acquire();
+        new Thread(new Updater()).start();
     }
 
     @Override
@@ -77,7 +66,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onResume() {
         super.onResume();
-        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, new IntentFilter(Listener.IntentId));
         getCookItemFromDb();
     }
 
@@ -104,20 +92,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mCookItems.add(ci);
             } while (c.moveToNext());
         }
+        db.close();
         mDishAdapter.notifyDataSetChanged();
-        getCookItemFromServer();
-    }
-
-    void getCookItemFromServer() {
-        try {
-            JSONObject jo = new JSONObject();
-            jo.put("query", "getreminders");
-            jo.put("session", "session_admin_id");
-            DataSocket ds = new DataSocket(jo.toString(), this, 1);
-            ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
     }
 
     void playSound(int res) {
@@ -145,7 +121,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onPause();
         mCookItems.clear();
         mDishAdapter.notifyDataSetChanged();
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
     }
 
     @Override
@@ -189,7 +164,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 cv.put("staff", ci.mStaff);
                 cv.put("table_name", ci.mTable);
                 cv.put("comments", ci.mComment);
-                db.insert("rem");
+                if (!db.insert("rem")) {
+                    db.close();
+                    return;
+                }
+                db.close();
                 ci.mState = 1;
                 jo.put("state", 1);
                 jo.put("query", "updatereminder");
@@ -293,6 +272,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     case 1:
                         sql = String.format("update rem set state_id=2 where rec='%s'", ci.mRecord);
                         db.exec(sql);
+                        db.close();
                         try {
                             JSONObject jo = new JSONObject();
                             jo.put("state", 2);
@@ -323,6 +303,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         db.insert("his");
                         sql = String.format("delete from rem where rec='%s'", ci.mRecord);
                         db.exec(sql);
+                        db.close();
                         try {
                             JSONObject jo = new JSONObject();
                             jo.put("state", 3);
@@ -361,42 +342,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    public class MessageReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String message = intent.getStringExtra("msg");
-            MainActivity.this.handleMessage(message);
-            NotificationSender.cancelAll(MainActivity.this);
-            playSound(R.raw.notification);
-        }
-    }
-
     public void socketReply(int requestCode, String s, int code) {
         if (code == 0) {
             return;
         }
         switch (requestCode) {
             case 1:
-                parseGetReminders(s);
+                //In updater runable
                 break;
             case 2:
                 parseUpdateReminder(s);
                 break;
-        }
-    }
-
-    public void parseGetReminders(String s) {
-        try {
-            JSONObject jo = new JSONObject(s);
-            if (jo.getString("reply").equals("ok")) {
-                JSONArray ja = jo.getJSONArray("dishes");
-                for (int i = 0; i < ja.length(); i++) {
-                    handleMessage(ja.getJSONObject(i));
-                }
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
         }
     }
 
@@ -407,6 +363,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Db db = new Db(this);
                 String sql = String.format("update rem set state_id=%d where rec='%s'", jo.getInt("state"), jo.getString("rec"));
                 db.exec(sql);
+                db.close();
                 for (int i = 0; i < mCookItems.size(); i++) {
                     CookItem ci = mCookItems.get(i);
                     if (ci.mRecord.equals(jo.getString("rec"))) {
@@ -421,11 +378,62 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    public class Updater implements Runnable {
+    public class Updater implements Runnable, DataSocket.DataReceiver {
 
+        private boolean canUpdate = true;
         @Override
         public void run() {
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    Thread.sleep(1000);
+                    if (!canUpdate) {
+                        continue;
+                    }
+                    canUpdate = false;
+                    JSONObject jo = new JSONObject();
+                    jo.put("query", "getreminders");
+                    jo.put("session", "session_admin_id");
+                    DataSocket ds = new DataSocket(jo.toString(), MainActivity.this, 1);
+                    ds.mDataReceiver = this;
+                    ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
 
+        @Override
+        public void socketReply(int requestCode, String s, int code) {
+            synchronized (this) {
+                if (code == 0) {
+                    canUpdate = true;
+                    return;
+                }
+                try {
+                    JSONObject jo = new JSONObject(s);
+                    if (jo.getString("reply").equals("ok")) {
+                        JSONArray ja = jo.getJSONArray("dishes");
+                        for (int i = 0; i < ja.length(); i++) {
+                            final JSONObject j = ja.getJSONObject(i);
+                            final boolean last = i == ja.length() - 1;
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    handleMessage(j);
+                                    if (last) {
+                                        playSound(R.raw.notification);
+                                    }
+                                }
+                            });
+                        }
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+            canUpdate = true;
         }
     }
 
@@ -448,5 +456,4 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //        dlg.show();
 //        return dlg;
 //    }
-
 }
