@@ -38,8 +38,9 @@ public class DataSocket extends AsyncTask {
             mMessage = "Setup server address";
             return mReplyCode;
         }
+        Socket s = null;
         try {
-            Socket s = new Socket();
+            s = new Socket();
             s.setSoTimeout(3000);
             s.connect(new InetSocketAddress(Cnf.getString(mContext, "server_address"), Integer.valueOf(Cnf.getString(mContext, "server_port"))));
             OutputStream dos = s.getOutputStream();
@@ -47,6 +48,11 @@ public class DataSocket extends AsyncTask {
             bb.order(ByteOrder.LITTLE_ENDIAN);
             bb.putInt(mMessage.getBytes("UTF-8").length);
             byte[] bytes = bb.array();
+            dos.write(bytes, 0, 4);
+            bb = ByteBuffer.allocate(4);
+            bb.order(ByteOrder.LITTLE_ENDIAN);
+            bb.putInt(1); //JSON TYPE
+            bytes = bb.array();
             dos.write(bytes, 0, 4);
             bytes = mMessage.getBytes("UTF-8");
             dos.write(bytes, 0, bytes.length);
@@ -69,11 +75,17 @@ public class DataSocket extends AsyncTask {
                 mMessage += new String(bbb, 0, pt);
             }
             mReplyCode = mMessage.length();
-            s.close();
         } catch (IOException e) {
             e.printStackTrace();
             mMessage = e.getMessage();
             mReplyCode = 0;
+        }
+        try {
+            if (s.isConnected()) {
+                s.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         return mReplyCode;
     }

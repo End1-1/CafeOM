@@ -153,6 +153,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             ci.mQty = jo.getString("qty");
             ci.mStaff = jo.getString("staff");
             ci.mComment = jo.getString("comment");
+            if (ci.mState > 2) {
+                jo.put("c", 2);
+                jo.put("state", ci.mState);
+                jo.put("rec",  ci.mRecord);
+                DataSocket ds = new DataSocket(jo.toString(), this, 2);
+                ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                return;
+            }
             if (ci.mState == 0) {
                 Db db = new Db(this);
                 ContentValues cv = db.getContentValues();
@@ -170,9 +178,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
                 db.close();
                 ci.mState = 1;
+                jo.put("c", 2);
                 jo.put("state", 1);
-                jo.put("query", "updatereminder");
-                jo.put("session", "session_admin_id");
+                jo.put("rec",  ci.mRecord);
                 DataSocket ds = new DataSocket(jo.toString(), this, 2);
                 ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }
@@ -248,6 +256,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             String getButtonTitle(int state) {
                 switch (state) {
+                    case 0:
                     case 1:
                         return getString(R.string.StartCooking);
                     case 2:
@@ -275,9 +284,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         db.close();
                         try {
                             JSONObject jo = new JSONObject();
+                            jo.put("c", 2);
                             jo.put("state", 2);
-                            jo.put("query", "updatereminder");
-                            jo.put("session", "session_admin_id");
                             jo.put("rec", ci.mRecord);
                             jo.put("started", new SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault()).format(new Date()));
                             ds = new DataSocket(jo.toString(), MainActivity.this, 2);
@@ -306,9 +314,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         db.close();
                         try {
                             JSONObject jo = new JSONObject();
+                            jo.put("c", 2);
                             jo.put("state", 3);
-                            jo.put("query", "updatereminder");
-                            jo.put("session", "session_admin_id");
                             jo.put("rec", ci.mRecord);
                             jo.put("ready", new SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault()).format(new Date()));
                             ds = new DataSocket(jo.toString(), MainActivity.this, 2);
@@ -385,14 +392,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public void run() {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
-                    Thread.sleep(1000);
+                    Thread.sleep(2000);
                     if (!canUpdate) {
                         continue;
                     }
                     canUpdate = false;
                     JSONObject jo = new JSONObject();
-                    jo.put("query", "getreminders");
-                    jo.put("session", "session_admin_id");
+                    jo.put("c", 1);
                     DataSocket ds = new DataSocket(jo.toString(), MainActivity.this, 1);
                     ds.mDataReceiver = this;
                     ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
