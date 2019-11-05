@@ -42,7 +42,7 @@ public class DataSocket extends AsyncTask {
         try {
             s = new Socket();
             s.setSoTimeout(3000);
-            s.connect(new InetSocketAddress(Cnf.getString(mContext, "server_address"), Integer.valueOf(Cnf.getString(mContext, "server_port"))));
+            s.connect(new InetSocketAddress(Cnf.getString(mContext, "server_address"), Integer.valueOf(Cnf.getString(mContext, "server_port"))), 2000);
             OutputStream dos = s.getOutputStream();
             ByteBuffer bb = ByteBuffer.allocate(4);
             bb.order(ByteOrder.LITTLE_ENDIAN);

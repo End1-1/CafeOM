@@ -392,7 +392,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public void run() {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
-                    Thread.sleep(2000);
+                    Thread.sleep(100);
                     if (!canUpdate) {
                         continue;
                     }
