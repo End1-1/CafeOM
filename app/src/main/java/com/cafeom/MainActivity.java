@@ -66,34 +66,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onResume() {
         super.onResume();
-        getCookItemFromDb();
     }
 
     @Override
     protected void onDestroy() {
         mWakeLock.release();
         super.onDestroy();
-    }
-
-    void getCookItemFromDb() {
-        Db db = new Db(this);
-        Cursor c = db.select("select rec, state_id, dish, qty, staff, table_name, started, comments from rem");
-        if (c.moveToFirst()) {
-            do {
-                CookItem ci = new CookItem();
-                ci.mState = c.getInt(1);
-                ci.mRecord = c.getString(0);
-                ci.mDish = c.getString(2);
-                ci.mQty = c.getString(3);
-                ci.mStaff = c.getString(4);
-                ci.mTable = c.getString(5);
-                ci.mTime = c.getString(6);
-                ci.mComment = c.getString(7);
-                mCookItems.add(ci);
-            } while (c.moveToNext());
-        }
-        db.close();
-        mDishAdapter.notifyDataSetChanged();
     }
 
     void playSound(int res) {
@@ -133,61 +111,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    public void handleMessage(String s) {
-        try {
-            JSONObject jo = new JSONObject(s);
-            handleMessage(jo);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void handleMessage(JSONObject jo) {
-        try {
-            CookItem ci = new CookItem();
-            ci.mState = jo.getInt("state");
-            ci.mRecord = jo.getString("rec");
-            ci.mTime = jo.getString("time");
-            ci.mTable = jo.getString("table");
-            ci.mDish = jo.getString("dish");
-            ci.mQty = jo.getString("qty");
-            ci.mStaff = jo.getString("staff");
-            ci.mComment = jo.getString("comment");
-            if (ci.mState > 2) {
-                jo.put("c", 2);
-                jo.put("state", ci.mState);
-                jo.put("rec",  ci.mRecord);
-                DataSocket ds = new DataSocket(jo.toString(), this, 2);
-                ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                return;
-            }
-            if (ci.mState == 0) {
-                Db db = new Db(this);
-                ContentValues cv = db.getContentValues();
-                cv.put("rec", ci.mRecord);
-                cv.put("started", ci.mTime);
-                cv.put("state_id", "0");
-                cv.put("dish", ci.mDish);
-                cv.put("qty", ci.mQty);
-                cv.put("staff", ci.mStaff);
-                cv.put("table_name", ci.mTable);
-                cv.put("comments", ci.mComment);
-                if (!db.insert("rem")) {
-                    db.close();
-                    return;
-                }
-                db.close();
-                ci.mState = 1;
-                jo.put("c", 2);
-                jo.put("state", 1);
-                jo.put("rec",  ci.mRecord);
-                DataSocket ds = new DataSocket(jo.toString(), this, 2);
-                ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-            }
+    public void compareArrays(ArrayList<CookItem> items) {
+        for (CookItem ci: items) {
             mCookItems.add(ci);
+            if (ci.mState == 0) {
+                try {
+                    JSONObject jo = new JSONObject();
+                    jo.put("c", 2);
+                    jo.put("state", 1);
+                    jo.put("rec", ci.mRecord);
+                    DataSocket ds = new DataSocket(jo.toString(), MainActivity.this, 2);
+                    ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        if (items.size() > 0) {
+            playSound(R.raw.notification);
             mDishAdapter.notifyDataSetChanged();
-        } catch (JSONException e) {
-            e.printStackTrace();
         }
     }
 
@@ -273,15 +215,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     return;
                 }
                 CookItem ci = MainActivity.this.mCookItems.get(i);
-                Db db  = new Db(MainActivity.this);
-                String sql;
                 DataSocket ds;
                 switch (ci.mState) {
                     case 0:
                     case 1:
-                        sql = String.format("update rem set state_id=2 where rec='%s'", ci.mRecord);
-                        db.exec(sql);
-                        db.close();
                         try {
                             JSONObject jo = new JSONObject();
                             jo.put("c", 2);
@@ -299,19 +236,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         break;
                     case 2:
                     default:
-                        ContentValues cv = db.getContentValues();
-                        cv.put("rec", ci.mRecord);
-                        cv.put("started", ci.mTime);
-                        cv.put("state_id", "0");
-                        cv.put("dish", ci.mDish);
-                        cv.put("qty", ci.mQty);
-                        cv.put("staff", ci.mStaff);
-                        cv.put("table_name", ci.mTable);
-                        cv.put("comments", ci.mComment);
-                        db.insert("his");
-                        sql = String.format("delete from rem where rec='%s'", ci.mRecord);
-                        db.exec(sql);
-                        db.close();
                         try {
                             JSONObject jo = new JSONObject();
                             jo.put("c", 2);
@@ -355,50 +279,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         switch (requestCode) {
             case 1:
-                //In updater runable
                 break;
             case 2:
-                parseUpdateReminder(s);
                 break;
-        }
-    }
-
-    public void parseUpdateReminder(String s) {
-        try {
-            JSONObject jo = new JSONObject(s);
-            if (jo.getString("reply").equals("ok")) {
-                Db db = new Db(this);
-                String sql = String.format("update rem set state_id=%d where rec='%s'", jo.getInt("state"), jo.getString("rec"));
-                db.exec(sql);
-                db.close();
-                for (int i = 0; i < mCookItems.size(); i++) {
-                    CookItem ci = mCookItems.get(i);
-                    if (ci.mRecord.equals(jo.getString("rec"))) {
-                        ci.mState = jo.getInt("state");
-                        mDishAdapter.notifyDataSetChanged();
-                        return;
-                    }
-                }
-            }
-        } catch (JSONException e){
-            e.printStackTrace();
         }
     }
 
     public class Updater implements Runnable, DataSocket.DataReceiver {
 
         private boolean canUpdate = true;
+        boolean first = true;
         @Override
         public void run() {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
-                    Thread.sleep(100);
+                    Thread.sleep(2000);
                     if (!canUpdate) {
                         continue;
                     }
                     canUpdate = false;
                     JSONObject jo = new JSONObject();
                     jo.put("c", 1);
+                    jo.put("first", first ? 1 : 0);
                     DataSocket ds = new DataSocket(jo.toString(), MainActivity.this, 1);
                     ds.mDataReceiver = this;
                     ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -420,17 +322,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 try {
                     JSONObject jo = new JSONObject(s);
                     if (jo.getString("reply").equals("ok")) {
+                        first = false;
                         JSONArray ja = jo.getJSONArray("dishes");
+                        final ArrayList<CookItem> items = new ArrayList<>();
                         for (int i = 0; i < ja.length(); i++) {
-                            final JSONObject j = ja.getJSONObject(i);
-                            final boolean last = i == ja.length() - 1;
+                            jo = ja.getJSONObject(i);
+                            CookItem ci = new CookItem();
+                            ci.mState = jo.getInt("state");
+                            ci.mRecord = jo.getString("rec");
+                            ci.mTime = jo.getString("time");
+                            ci.mTable = jo.getString("table");
+                            ci.mDish = jo.getString("dish");
+                            ci.mQty = jo.getString("qty");
+                            ci.mStaff = jo.getString("staff");
+                            ci.mComment = jo.getString("comment");
+                            items.add(ci);
+                        }
+                        if (items.size() > 0) {
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    handleMessage(j);
-                                    if (last) {
-                                        playSound(R.raw.notification);
-                                    }
+                                    compareArrays(items);
                                 }
                             });
                         }
