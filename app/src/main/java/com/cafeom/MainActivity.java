@@ -34,6 +34,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     DishAdapters mDishAdapter;
     protected PowerManager.WakeLock mWakeLock;
     private MediaPlayer mMediaPlayer = null;
+    private boolean first = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +67,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onResume() {
         super.onResume();
+        first = true;
+        mCookItems.clear();
+        mDishAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -288,12 +292,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public class Updater implements Runnable, DataSocket.DataReceiver {
 
         private boolean canUpdate = true;
-        boolean first = true;
         @Override
         public void run() {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
-                    Thread.sleep(2000);
+                    Thread.sleep(20);
                     if (!canUpdate) {
                         continue;
                     }
