@@ -10,6 +10,7 @@ import android.text.method.HideReturnsTransformationMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.EditText;
 
 public class ConfigCnf extends Fragment implements  View.OnClickListener {
@@ -34,10 +35,11 @@ public class ConfigCnf extends Fragment implements  View.OnClickListener {
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_config_cnf, container, false);
         v.findViewById(R.id.btnSave).setOnClickListener(this);
-        v.findViewById(R.id.btnClearDb).setOnClickListener(this);
         setEt(v, R.id.etPassword, Cnf.getString(getContext(), "cnf_password"));
         setEt(v, R.id.etServerAddress, Cnf.getString(getContext(), "server_address"));
         setEt(v, R.id.etServerPort, Cnf.getString(getContext(), "server_port"));
+        setEt(v, R.id.edReminderId, Cnf.getString(getContext(), "reminder_id"));
+        setCheck(v, R.id.chOnlyReady, Cnf.getBoolean(getContext(), "readyonly"));
         return v;
     }
 
@@ -65,17 +67,30 @@ public class ConfigCnf extends Fragment implements  View.OnClickListener {
                 Cnf.setString(getContext(), "cnf_password", et(R.id.etPassword));
                 Cnf.setString(getContext(), "server_address", et(R.id.etServerAddress));
                 Cnf.setString(getContext(), "server_port", et(R.id.etServerPort));
+                Cnf.setString(getContext(), "reminder_id", et(R.id.edReminderId));
+                Cnf.setBoolean(getContext(), "readyonly", getCheck(R.id.chOnlyReady));
                 mListener.config();
-                break;
-            case R.id.btnClearDb:
-                Db db = new Db(getContext());
-                db.exec("delete from rem");
                 break;
         }
     }
 
     public interface OnConfigCnfListener {
         void config();
+    }
+
+    void setCheck(View v, int id, boolean checked) {
+        CheckBox ch = v.findViewById(id);
+        if (ch != null) {
+            ch.setChecked(checked);
+        }
+    }
+
+    boolean getCheck(int id) {
+        CheckBox ch = getView().findViewById(id);
+        if (ch != null) {
+            return ch.isChecked();
+        }
+        return false;
     }
 
     void setEt(View v, int id, String s) {

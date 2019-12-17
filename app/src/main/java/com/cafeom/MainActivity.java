@@ -1,9 +1,7 @@
 package com.cafeom;
 
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -12,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -27,14 +26,20 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-    ArrayList<CookItem> mCookItems = new ArrayList<>();
+    Map<Integer, CookItem> mCookItems;
     DishAdapters mDishAdapter;
     protected PowerManager.WakeLock mWakeLock;
     private MediaPlayer mMediaPlayer = null;
     private boolean first = true;
+
+    public MainActivity() {
+        mCookItems = new TreeMap<>();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,6 +103,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mMediaPlayer.start();
     }
 
+    public CookItem getItemByIndex(int index) {
+        int pos = 0;
+        for ( Map.Entry<Integer , CookItem> e: mCookItems.entrySet() ) {
+            if (pos == index) {
+                return e.getValue();
+            }
+            pos++;
+        }
+        return new CookItem();
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
@@ -116,13 +132,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void compareArrays(ArrayList<CookItem> items) {
+        boolean readyOnly = Cnf.getBoolean(this, "readyonly");
         for (CookItem ci: items) {
-            mCookItems.add(ci);
+            mCookItems.put(Integer.valueOf(ci.mRecord), ci);
             if (ci.mState == 0) {
                 try {
+                    if (readyOnly) {
+                        ci.mState = 2;
+                    }
                     JSONObject jo = new JSONObject();
                     jo.put("c", 2);
-                    jo.put("state", 1);
+                    jo.put("started", new SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault()).format(new Date()));
+                    jo.put("readyonly", readyOnly ? "1" : "0");
+                    jo.put("state", readyOnly ? 2 : 1);
                     jo.put("rec", ci.mRecord);
                     DataSocket ds = new DataSocket(jo.toString(), MainActivity.this, 2);
                     ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -164,6 +186,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         public class VH extends RecyclerView.ViewHolder implements View.OnClickListener {
 
+            CookItem mItem;
             TextView tvTime;
             TextView tvTable;
             TextView tvDish;
@@ -171,6 +194,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             TextView tvStaff;
             TextView tvComment;
             Button mButton;
+            ImageButton btnRemove;
 
             public VH(View v) {
                 super(v);
@@ -182,10 +206,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 tvComment = v.findViewById(R.id.tvComment);
                 mButton = v.findViewById(R.id.btn);
                 mButton.setOnClickListener(this);
+                btnRemove = v.findViewById(R.id.btnRemove);
+                btnRemove.setOnClickListener(this);
             }
 
             void onBind(int position) {
-                CookItem ci = MainActivity.this.mCookItems.get(position);
+                CookItem ci = getItemByIndex(position);
+                mItem = ci;
                 tvTime.setText(ci.mTime);
                 tvTable.setText(ci.mTable);
                 tvDish.setText(ci.mDish);
@@ -211,14 +238,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 return String.format("%d", state);
             }
 
-            @Override
-            public void onClick(View v) {
-                playSound(R.raw.click);
-                int i = getAdapterPosition();
-                if (i < 0) {
-                    return;
-                }
-                CookItem ci = MainActivity.this.mCookItems.get(i);
+            void changeState(CookItem ci) {
                 DataSocket ds;
                 switch (ci.mState) {
                     case 0:
@@ -249,11 +269,46 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             ds = new DataSocket(jo.toString(), MainActivity.this, 2);
                             ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                             ci.mState = 3;
-                            mCookItems.remove(ci);
+                            mCookItems.remove(Integer.valueOf(ci.mRecord));
                             notifyDataSetChanged();
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
+                        break;
+                }
+            }
+
+            void removeDish(CookItem ci) {
+                try {
+                    DataSocket ds;
+                    JSONObject jo = new JSONObject();
+                    jo.put("c", 2);
+                    jo.put("state", 5);
+                    jo.put("rec", ci.mRecord);
+                    jo.put("ready", new SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault()).format(new Date()));
+                    ds = new DataSocket(jo.toString(), MainActivity.this, 2);
+                    ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                    ci.mState = 3;
+                    mCookItems.remove(Integer.valueOf(ci.mRecord));
+                    notifyDataSetChanged();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onClick(View v) {
+                playSound(R.raw.click);
+                if (mItem == null) {
+                    return;
+                }
+                CookItem ci = mItem;
+                switch (v.getId()) {
+                    case R.id.btn:
+                        changeState(ci);
+                        break;
+                    case R.id.btnRemove:
+                        removeDish(ci);
                         break;
                 }
             }
@@ -296,7 +351,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public void run() {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
-                    Thread.sleep(20);
+                    Thread.sleep(1000);
                     if (!canUpdate) {
                         continue;
                     }
@@ -304,6 +359,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     JSONObject jo = new JSONObject();
                     jo.put("c", 1);
                     jo.put("first", first ? 1 : 0);
+                    jo.put("reminder", Cnf.getString(MainActivity.this, "reminder_id"));
                     DataSocket ds = new DataSocket(jo.toString(), MainActivity.this, 1);
                     ds.mDataReceiver = this;
                     ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);

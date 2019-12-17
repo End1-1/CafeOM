@@ -64,9 +64,17 @@
         android:layout_height="wrap_content"
         android:background="#e9ffa7">
 
+        <ImageButton
+            android:id="@+id/btnRemove"
+            android:layout_margin="@dimen/btn_margin"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:scaleType="fitXY"
+            android:background="@drawable/cancel"/>
+
         <TextView
             android:id="@+id/tvTime"
-            android:layout_width="49dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:text="00:00"
@@ -95,7 +103,7 @@
         <Button
             android:id="@+id/btn"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_gravity="center_vertical"
             android:text="@string/StartCooking"
             android:textColor="#000000"
