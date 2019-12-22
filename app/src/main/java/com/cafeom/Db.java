@@ -10,7 +10,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import androidx.annotation.Nullable;
 
 public class Db extends SQLiteOpenHelper {
-    public static final int dbversion = 7;
+    public static final int dbversion = 8;
     private ContentValues contentValues;
     private SQLiteDatabase dbLite;
     private Cursor cursor;
@@ -22,8 +22,7 @@ public class Db extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL("create table rem (rec text primary key, table_name text, staff text, dish text, qty text, state_id text, started text, comments text) ");
-        db.execSQL("create table his (rec text primary key, table_name text, staff text, dish text, qty text, state_id text, started text, comments text) ");
+        db.execSQL("create table exs (id integer primary key autoincrement, ex text)");
     }
 
     public void noException(SQLiteDatabase db, String sql) {
@@ -39,6 +38,7 @@ public class Db extends SQLiteOpenHelper {
         if (oldVersion != newVersion) {
             noException(db, "drop table rem");
             noException(db, "drop table his");
+            noException(db, "drop table exs");
             onCreate(db);
         }
     }
