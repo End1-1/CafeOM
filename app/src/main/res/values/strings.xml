@@ -12,6 +12,12 @@
     <string name="AllDepartments">Բոլոր բաժինները</string>
     <string name="Kitchen">Խոհանոց</string>
     <string name="Bar">Բար</string>
+    <string name="Begin">Սկսել</string>
+    <string name="OK">ԱՅՈ</string>
+    <string name="CANCEL">ՈՉ</string>
+    <string name="Remove">Հեռացնել</string>
+    <string name="ReadyOnly">Մայն պատրաստ է</string>
+    <string name="Executing">Կատարվում է</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

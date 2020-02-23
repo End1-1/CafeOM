@@ -3,6 +3,9 @@ package com.cafeom;
 import android.content.Context;
 import android.os.AsyncTask;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -77,7 +80,14 @@ public class DataSocket extends AsyncTask {
             mReplyCode = mMessage.length();
         } catch (IOException e) {
             e.printStackTrace();
-            mMessage = e.getMessage();
+            try {
+                JSONObject jmsg = new JSONObject();
+                jmsg.put("reply", "fail");
+                jmsg.put("msg", e.getMessage());
+                mMessage = jmsg.toString();
+            } catch (JSONException ee) {
+                ee.printStackTrace();
+            }
             mReplyCode = 0;
         }
         try {
