@@ -92,7 +92,7 @@
 
         <TextView
             android:id="@+id/tvStaff"
-            android:layout_width="200dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_weight="1"
@@ -108,6 +108,32 @@
             android:text="@string/StartCooking"
             android:textColor="#000000"
             android:textStyle="bold"/>
+
+        <Button
+            android:id="@+id/btnNo"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="@string/NO"
+            android:textColor="#000000"
+            android:textStyle="bold"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btnYes"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="@string/YES"
+            android:textColor="#000000"
+            android:textStyle="bold"
+            android:visibility="gone"/>
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:visibility="gone"/>
     </LinearLayout>
 
     <View

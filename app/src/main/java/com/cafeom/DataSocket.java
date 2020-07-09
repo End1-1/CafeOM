@@ -18,7 +18,7 @@ import java.nio.ByteOrder;
 public class DataSocket extends AsyncTask {
 
     public interface DataReceiver {
-        void socketReply(int requestCode, String s, int code);
+        void socketReply(int requestCode, String s, int code, int option);
     }
 
     public DataReceiver mDataReceiver;
@@ -26,12 +26,14 @@ public class DataSocket extends AsyncTask {
     private String mMessage;
     private int mReplyCode;
     private int mRequestCode;
+    private int mOption;
 
-    public DataSocket(String s, Context context, int requestCode) {
+    public DataSocket(String s, Context context, int requestCode, int option) {
         mContext = context;
         mMessage = s;
         mRequestCode = requestCode;
         mDataReceiver = null;
+        mOption = option;
     }
 
     @Override
@@ -104,11 +106,11 @@ public class DataSocket extends AsyncTask {
     protected void onPostExecute(Object o) {
         super.onPostExecute(o);
         if (mDataReceiver != null) {
-            mDataReceiver.socketReply(mRequestCode, mMessage, mReplyCode);
+            mDataReceiver.socketReply(mRequestCode, mMessage, mReplyCode, mOption);
         } else {
             if (mContext != null) {
                 MainActivity ma = (MainActivity) mContext;
-                ma.socketReply(mRequestCode, mMessage, mReplyCode);
+                ma.socketReply(mRequestCode, mMessage, mReplyCode, mOption);
             }
         }
     }

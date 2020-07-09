@@ -24,9 +24,7 @@ public class AppAct extends AppCompatActivity {
         ll.setOrientation(LinearLayout.HORIZONTAL);
         ll.setPadding(llPadding, llPadding, llPadding, llPadding);
         ll.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams llParam = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
+        LinearLayout.LayoutParams llParam = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         llParam.gravity = Gravity.CENTER;
         ll.setLayoutParams(llParam);
 
@@ -35,8 +33,7 @@ public class AppAct extends AppCompatActivity {
         progressBar.setPadding(0, 0, llPadding, 0);
         progressBar.setLayoutParams(llParam);
 
-        llParam = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
+        llParam = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         llParam.gravity = Gravity.CENTER;
         TextView tvText = new TextView(this);
         tvText.setText(text);

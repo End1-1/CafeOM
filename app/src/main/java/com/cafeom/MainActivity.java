@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.media.MediaPlayer;
+import android.opengl.Visibility;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.PowerManager;
@@ -14,10 +15,10 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -40,8 +41,7 @@ public class MainActivity extends AppAct implements View.OnClickListener {
     private MediaPlayer mMediaPlayer = null;
     private boolean first = true;
     private boolean stopThread = false;
-    private boolean doNotUpdateAtTheThisTime = false;
-    private boolean dialogActive = false;
+    private static int mRequestCount = 0;
 
     public MainActivity() {
         mCookItems = new TreeMap<>();
@@ -165,14 +165,21 @@ public class MainActivity extends AppAct implements View.OnClickListener {
     }
 
     public void compareArrays(ArrayList<CookItem> items) {
-        mCookItems.clear();
+        Map<Integer, CookItem> cookItems = new TreeMap<>();
         boolean playSound = false;
         boolean readyOnly = Cnf.getBoolean(this, "readyonly");
         for (CookItem ci: items) {
             if (ci == null) {
                 continue;
             }
-            mCookItems.put(Integer.valueOf(ci.mRecord), ci);
+            if (mCookItems.containsKey(Integer.valueOf(ci.mRecord))) {
+                CookItem ct = mCookItems.get(Integer.valueOf(ci.mRecord));
+                ci.btnDoneVisibility = ct.btnDoneVisibility;
+                ci.btnNoVisibility = ct.btnNoVisibility;
+                ci.btnYesVisibility = ct.btnYesVisibility;
+                ci.progressVisibility = ct.progressVisibility;
+            }
+            cookItems.put(Integer.valueOf(ci.mRecord), ci);
             if (ci.mState == 0) {
                 playSound = true;
                 try {
@@ -185,7 +192,7 @@ public class MainActivity extends AppAct implements View.OnClickListener {
                     jo.put("readyonly", readyOnly ? "1" : "0");
                     jo.put("state", readyOnly ? 2 : 1);
                     jo.put("rec", ci.mRecord);
-                    DataSocket ds = new DataSocket(jo.toString(), MainActivity.this, readyOnly ? RC_DISHSTART : RC_DISHRECEIVED);
+                    DataSocket ds = new DataSocket(jo.toString(), MainActivity.this, readyOnly ? RC_DISHSTART : RC_DISHRECEIVED, Integer.valueOf(ci.mRecord));
                     ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -198,6 +205,7 @@ public class MainActivity extends AppAct implements View.OnClickListener {
                 playSound(R.raw.notification);
             }
         }
+        mCookItems = cookItems;
         mDishAdapter.notifyDataSetChanged();
     }
 
@@ -211,16 +219,17 @@ public class MainActivity extends AppAct implements View.OnClickListener {
         String mComment;
         int mState;
 
+        int btnDoneVisibility;
+        int btnYesVisibility;
+        int btnNoVisibility;
+        int progressVisibility;
+
         public CookItem() {
+            btnDoneVisibility = View.VISIBLE;
+            btnYesVisibility = View.GONE;
+            btnNoVisibility = View.GONE;
+            progressVisibility = View.GONE;
 
-        }
-
-        public CookItem(String time, String table, String dish, String qty, int state) {
-            mTime = time;
-            mTable = table;
-            mDish = dish;
-            mQty = qty;
-            mState = state;
         }
     }
 
@@ -235,8 +244,11 @@ public class MainActivity extends AppAct implements View.OnClickListener {
             TextView tvQty;
             TextView tvStaff;
             TextView tvComment;
-            Button mButton;
+            Button btnDone;
+            Button btnYes;
+            Button btnNo;
             ImageButton btnRemove;
+            ProgressBar progressBar;
 
             public VH(View v) {
                 super(v);
@@ -246,10 +258,15 @@ public class MainActivity extends AppAct implements View.OnClickListener {
                 tvQty = v.findViewById(R.id.tvQty);
                 tvStaff = v.findViewById(R.id.tvStaff);
                 tvComment = v.findViewById(R.id.tvComment);
-                mButton = v.findViewById(R.id.btn);
-                mButton.setOnClickListener(this);
+                btnDone = v.findViewById(R.id.btn);
+                btnDone.setOnClickListener(this);
                 btnRemove = v.findViewById(R.id.btnRemove);
                 btnRemove.setOnClickListener(this);
+                btnYes = v.findViewById(R.id.btnYes);
+                btnYes.setOnClickListener(this);
+                btnNo = v.findViewById(R.id.btnNo);
+                btnNo.setOnClickListener(this);
+                progressBar = v.findViewById(R.id.progressBar);
             }
 
             void onBind(int position) {
@@ -266,7 +283,11 @@ public class MainActivity extends AppAct implements View.OnClickListener {
                 } else {
                     tvComment.setVisibility(View.VISIBLE);
                 }
-                mButton.setText(getButtonTitle(ci.mState));
+                btnDone.setText(getButtonTitle(ci.mState));
+                btnDone.setVisibility(ci.btnDoneVisibility);
+                btnYes.setVisibility(ci.btnYesVisibility);
+                btnNo.setVisibility(ci.btnNoVisibility);
+                progressBar.setVisibility(ci.progressVisibility);
             }
 
             String getButtonTitle(int state) {
@@ -281,71 +302,45 @@ public class MainActivity extends AppAct implements View.OnClickListener {
             }
 
             void changeState(final CookItem ci) {
-                if (dialogActive) {
-                    return;
-                }
-                String dialogMsg = "";
-                dialogActive = true;
-                switch (ci.mState) {
-                    case 0:
-                    case 1:
-                        dialogMsg = getString(R.string.Begin) + "?\r\n" + ci.mDish + "\r\n" + ci.mQty;
-                        break;
-                    case 2:
-                        dialogMsg = getString(R.string.Ready) + "?\r\n" + ci.mDish + "\r\n" + ci.mQty;
-                        break;
-                    default:
-                        break;
-                }
-                DialogInterface.OnClickListener dic = new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        DataSocket ds;
-                        switch (ci.mState) {
-                            case 0:
-                            case 1:
-                                try {
-                                    showProgressDialog(getString(R.string.Executing));
-                                    JSONObject jo = new JSONObject();
-                                    jo.put("c", 2);
-                                    jo.put("state", 2);
-                                    jo.put("rec", ci.mRecord);
-                                    jo.put("started", new SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault()).format(new Date()));
-                                    ds = new DataSocket(jo.toString(), MainActivity.this, RC_DISHSTART);
-                                    ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
-                                    DbEx.regException(MainActivity.this, e.getMessage());
-                                }
-                                break;
-                            case 2:
-                            default:
-                                try {
-                                    showProgressDialog(getString(R.string.Executing));
-                                    JSONObject jo = new JSONObject();
-                                    jo.put("c", 2);
-                                    jo.put("state", 3);
-                                    jo.put("rec", ci.mRecord);
-                                    jo.put("ready", new SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault()).format(new Date()));
-                                    ds = new DataSocket(jo.toString(), MainActivity.this, RC_DISHREADY);
-                                    ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
-                                    DbEx.regException(MainActivity.this, e.getMessage());
-                                }
-                                break;
-                        }
-                        playSound(R.raw.click);
+                    DataSocket ds;
+                    switch (ci.mState) {
+                        case 0:
+                        case 1:
+                            try {
+                                JSONObject jo = new JSONObject();
+                                jo.put("c", 2);
+                                jo.put("state", 2);
+                                jo.put("rec", ci.mRecord);
+                                jo.put("started", new SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault()).format(new Date()));
+                                ds = new DataSocket(jo.toString(), MainActivity.this, RC_DISHSTART, Integer.valueOf(ci.mRecord));
+                                ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                                mRequestCount++;
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                                DbEx.regException(MainActivity.this, e.getMessage());
+                            }
+                            break;
+                        case 2:
+                        default:
+                            try {
+                                JSONObject jo = new JSONObject();
+                                jo.put("c", 2);
+                                jo.put("state", 3);
+                                jo.put("rec", ci.mRecord);
+                                jo.put("ready", new SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault()).format(new Date()));
+                                ds = new DataSocket(jo.toString(), MainActivity.this, RC_DISHREADY, Integer.valueOf(ci.mRecord));
+                                ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                                mRequestCount++;
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                                DbEx.regException(MainActivity.this, e.getMessage());
+                            }
+                            break;
                     }
-                };
-                createCookItemDlg(dialogMsg, dic);
+                    playSound(R.raw.click);
             }
 
             void removeDish(final CookItem ci) {
-                if (dialogActive) {
-                    return;
-                }
-                dialogActive = true;
                 String dialogMsg = getString(R.string.Remove) + "?\r\n" + ci.mDish + "\r\n" + ci.mQty;
                 DialogInterface.OnClickListener dic = new DialogInterface.OnClickListener() {
                     @Override
@@ -358,8 +353,9 @@ public class MainActivity extends AppAct implements View.OnClickListener {
                             jo.put("state", 5);
                             jo.put("rec", ci.mRecord);
                             jo.put("ready", new SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault()).format(new Date()));
-                            ds = new DataSocket(jo.toString(), MainActivity.this, RC_DISHREMOVE);
+                            ds = new DataSocket(jo.toString(), MainActivity.this, RC_DISHREMOVE, Integer.valueOf(ci.mRecord));
                             ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                            mRequestCount++;
                         } catch (JSONException e) {
                             e.printStackTrace();
                             DbEx.regException(MainActivity.this, e.getMessage());
@@ -376,15 +372,29 @@ public class MainActivity extends AppAct implements View.OnClickListener {
                     return;
                 }
                 CookItem ci = mItem;
-                doNotUpdateAtTheThisTime = true;
+                //doNotUpdateAtTheThisTime = true;
                 switch (v.getId()) {
                     case R.id.btn:
-                        changeState(ci);
+                        ci.btnYesVisibility = View.VISIBLE;
+                        ci.btnNoVisibility = View.VISIBLE;
+                        ci.btnDoneVisibility = View.GONE;
                         break;
                     case R.id.btnRemove:
                         removeDish(ci);
                         break;
+                    case R.id.btnYes:
+                        ci.btnYesVisibility = View.GONE;
+                        ci.btnNoVisibility = View.GONE;
+                        ci.progressVisibility = View.VISIBLE;
+                        changeState(ci);
+                        break;
+                    case R.id.btnNo:
+                        ci.btnYesVisibility = View.GONE;
+                        ci.btnNoVisibility = View.GONE;
+                        ci.btnDoneVisibility = View.VISIBLE;
+                        break;
                 }
+                notifyDataSetChanged();
             }
         }
 
@@ -406,9 +416,19 @@ public class MainActivity extends AppAct implements View.OnClickListener {
         }
     }
 
-    public void socketReply(int requestCode, String s, int code) {
+    public void socketReply(int requestCode, String s, int code, int option) {
         hideProgressDialog();
         if (code == 0) {
+            if (requestCode == 3 || requestCode == 2 || requestCode == 4) {
+                CookItem ci = mCookItems.get(option);
+                if (ci != null) {
+                    ci.progressVisibility = View.GONE;
+                    ci.btnYesVisibility = View.GONE;
+                    ci.btnNoVisibility = View.GONE;
+                    ci.btnDoneVisibility = View.VISIBLE;
+                    mDishAdapter.notifyDataSetChanged();
+                }
+            }
             try {
                 JSONObject jo = new JSONObject(s);
                 if (!jo.getString("reply").equals("ok")) {
@@ -432,6 +452,10 @@ public class MainActivity extends AppAct implements View.OnClickListener {
                 case RC_DISHSTART:
                      ci = mCookItems.get(Integer.valueOf(jo.getString("rec")));
                      ci.mState = 2;
+                     ci.btnDoneVisibility = View.VISIBLE;
+                     ci.btnNoVisibility = View.GONE;
+                     ci.btnYesVisibility = View.GONE;
+                     ci.progressVisibility = View.GONE;
                      mDishAdapter.notifyDataSetChanged();
                     break;
                 case RC_DISHREADY:
@@ -443,6 +467,11 @@ public class MainActivity extends AppAct implements View.OnClickListener {
             }
         } catch (JSONException e) {
             e.printStackTrace();
+        }
+        if (requestCode == 4 || requestCode == 3 || requestCode == 2) {
+            if (mRequestCount > 0) {
+                mRequestCount--;
+            }
         }
     }
 
@@ -457,12 +486,15 @@ public class MainActivity extends AppAct implements View.OnClickListener {
                     if (!canUpdate) {
                         continue;
                     }
+                    if (mRequestCount > 0) {
+                        continue;
+                    }
                     canUpdate = false;
                     JSONObject jo = new JSONObject();
                     jo.put("c", 1);
                     jo.put("first", first ? 1 : 1);
                     jo.put("reminder", Cnf.getString(MainActivity.this, "reminder_id"));
-                    DataSocket ds = new DataSocket(jo.toString(), MainActivity.this, RC_DISHESLIST);
+                    DataSocket ds = new DataSocket(jo.toString(), MainActivity.this, RC_DISHESLIST, 0);
                     ds.mDataReceiver = this;
                     ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                 }
@@ -476,7 +508,7 @@ public class MainActivity extends AppAct implements View.OnClickListener {
         }
 
         @Override
-        public void socketReply(int requestCode, String s, int code) {
+        public void socketReply(int requestCode, String s, int code, int option) {
             synchronized (this) {
                 if (requestCode == 1) {
                     if (code == 0) {
@@ -510,10 +542,8 @@ public class MainActivity extends AppAct implements View.OnClickListener {
                             @Override
                             public void run() {
                                 if (items.size() > 0) {
-                                    if (doNotUpdateAtTheThisTime) {
-                                        if (!dialogActive) {
-                                            doNotUpdateAtTheThisTime = false;
-                                        }
+                                    if (mRequestCount > 0) {
+                                        canUpdate = false;
                                     } else {
                                         compareArrays(items);
                                     }
@@ -548,7 +578,7 @@ public class MainActivity extends AppAct implements View.OnClickListener {
         ab.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface dialog) {
-                dialogActive = false;
+                //dialogActive = false;
             }
         });
         AlertDialog dlg = ab.create();
