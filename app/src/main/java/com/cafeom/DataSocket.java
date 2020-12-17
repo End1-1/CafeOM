@@ -38,7 +38,7 @@ public class DataSocket extends AsyncTask {
 
     @Override
     protected Object doInBackground(Object[] objects) {
-        if (Cnf.getString(mContext, "server_address").isEmpty()) {
+        if (Cnf.getString("server_address").isEmpty()) {
             mReplyCode = 0;
             mMessage = "Setup server address";
             return mReplyCode;
@@ -47,7 +47,7 @@ public class DataSocket extends AsyncTask {
         try {
             s = new Socket();
             s.setSoTimeout(3000);
-            s.connect(new InetSocketAddress(Cnf.getString(mContext, "server_address"), Integer.valueOf(Cnf.getString(mContext, "server_port"))), 2000);
+            s.connect(new InetSocketAddress(Cnf.getString("server_address"), Integer.valueOf(Cnf.getString("server_port"))), 2000);
             OutputStream dos = s.getOutputStream();
             ByteBuffer bb = ByteBuffer.allocate(4);
             bb.order(ByteOrder.LITTLE_ENDIAN);

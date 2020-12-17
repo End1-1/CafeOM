@@ -13,9 +13,12 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.EditText;
 
+import com.cafeom.databinding.FragmentConfigCnfBinding;
+
 public class ConfigCnf extends Fragment implements  View.OnClickListener {
 
     private OnConfigCnfListener mListener;
+    private FragmentConfigCnfBinding bind;
 
     public ConfigCnf() {
     }
@@ -33,13 +36,16 @@ public class ConfigCnf extends Fragment implements  View.OnClickListener {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_config_cnf, container, false);
+        bind = FragmentConfigCnfBinding.inflate(getLayoutInflater(), container, false);
+        View v = bind.getRoot();
         v.findViewById(R.id.btnSave).setOnClickListener(this);
-        setEt(v, R.id.etPassword, Cnf.getString(getContext(), "cnf_password"));
-        setEt(v, R.id.etServerAddress, Cnf.getString(getContext(), "server_address"));
-        setEt(v, R.id.etServerPort, Cnf.getString(getContext(), "server_port"));
-        setEt(v, R.id.edReminderId, Cnf.getString(getContext(), "reminder_id"));
-        setCheck(v, R.id.chOnlyReady, Cnf.getBoolean(getContext(), "readyonly"));
+        setEt(v, R.id.etPassword, Cnf.getString("cnf_password"));
+        setEt(v, R.id.etServerAddress, Cnf.getString("server_address"));
+        setEt(v, R.id.etServerPort, Cnf.getString("server_port"));
+        setEt(v, R.id.edReminderId, Cnf.getString("reminder_id"));
+        setCheck(v, R.id.chOnlyReady, Cnf.getBoolean("readyonly"));
+        bind.orderServerAddress.setText(Cnf.getString("net_server"));
+        bind.branch.setText(Cnf.getString("branch"));
         return v;
     }
 
@@ -64,11 +70,13 @@ public class ConfigCnf extends Fragment implements  View.OnClickListener {
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btnSave:
-                Cnf.setString(getContext(), "cnf_password", et(R.id.etPassword));
-                Cnf.setString(getContext(), "server_address", et(R.id.etServerAddress));
-                Cnf.setString(getContext(), "server_port", et(R.id.etServerPort));
-                Cnf.setString(getContext(), "reminder_id", et(R.id.edReminderId));
-                Cnf.setBoolean(getContext(), "readyonly", getCheck(R.id.chOnlyReady));
+                Cnf.setString("cnf_password", et(R.id.etPassword));
+                Cnf.setString("server_address", et(R.id.etServerAddress));
+                Cnf.setString("server_port", et(R.id.etServerPort));
+                Cnf.setString("reminder_id", et(R.id.edReminderId));
+                Cnf.setBoolean("readyonly", getCheck(R.id.chOnlyReady));
+                Cnf.setString("net_server", bind.orderServerAddress.getText().toString());
+                Cnf.setString("branch", bind.branch.getText().toString());
                 mListener.config();
                 break;
         }

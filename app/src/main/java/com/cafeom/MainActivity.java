@@ -22,6 +22,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.cafeom.databinding.ActivityMainBinding;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -35,8 +37,9 @@ import java.util.TreeMap;
 
 public class MainActivity extends AppAct implements View.OnClickListener {
 
-    Map<Integer, CookItem> mCookItems;
-    DishAdapters mDishAdapter;
+    private ActivityMainBinding bind;
+    private Map<Integer, CookItem> mCookItems;
+    private DishAdapters mDishAdapter;
     protected PowerManager.WakeLock mWakeLock;
     private MediaPlayer mMediaPlayer = null;
     private boolean first = true;
@@ -56,14 +59,16 @@ public class MainActivity extends AppAct implements View.OnClickListener {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);//will hide the title
-        getSupportActionBar().hide();
-        setContentView(R.layout.activity_main);
+        bind = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(bind.getRoot());
+        /*TEMP*/
+        Cnf.setString("net_server", "https://10.1.0.2");
+        /*END TEMP*/
         //Cnf.setString(this, "cnf_password", "111");
         //Cnf.setString(this, "server_address", "10.1.0.2");
         //Cnf.setString(this, "server_port", "888");
         TextView tvDept = findViewById(R.id.tvDept);
-        String reminerId = Cnf.getString(this, "reminder_id");
+        String reminerId = Cnf.getString("reminder_id");
         if (reminerId == null) {
             reminerId = "0";
         }
@@ -83,15 +88,18 @@ public class MainActivity extends AppAct implements View.OnClickListener {
         }
         NotificationSender.cancelAll(this);
 
-        RecyclerView rv = findViewById(R.id.rvDishes);
         mDishAdapter = new DishAdapters();
-        rv.setLayoutManager(new GridLayoutManager(this, 1));
-        rv.setAdapter(mDishAdapter);
-        findViewById(R.id.ivConfig).setOnClickListener(this);
+        bind.rv.setLayoutManager(new GridLayoutManager(this, 1));
+        bind.rv.setAdapter(mDishAdapter);
+        bind.ivConfig.setOnClickListener(this);
+        bind.ivOrder.setOnClickListener(this);
 
         final PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "com.cafeom:wakeeetag");
         mWakeLock.acquire();
+
+        Intent i = new Intent(this, WebService.class);
+        startService(i);
     }
 
     @Override
@@ -161,13 +169,17 @@ public class MainActivity extends AppAct implements View.OnClickListener {
                 Intent intent = new Intent(this, Config.class);
                 startActivity(intent);
                 break;
+            case R.id.ivOrder:
+                Intent orderIntent = new Intent(this, GoodsOrder.class);
+                startActivity(orderIntent);
+                break;
         }
     }
 
     public void compareArrays(ArrayList<CookItem> items) {
         Map<Integer, CookItem> cookItems = new TreeMap<>();
         boolean playSound = false;
-        boolean readyOnly = Cnf.getBoolean(this, "readyonly");
+        boolean readyOnly = Cnf.getBoolean("readyonly");
         for (CookItem ci: items) {
             if (ci == null) {
                 continue;
@@ -493,7 +505,7 @@ public class MainActivity extends AppAct implements View.OnClickListener {
                     JSONObject jo = new JSONObject();
                     jo.put("c", 1);
                     jo.put("first", first ? 1 : 1);
-                    jo.put("reminder", Cnf.getString(MainActivity.this, "reminder_id"));
+                    jo.put("reminder", Cnf.getString("reminder_id"));
                     DataSocket ds = new DataSocket(jo.toString(), MainActivity.this, RC_DISHESLIST, 0);
                     ds.mDataReceiver = this;
                     ds.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);

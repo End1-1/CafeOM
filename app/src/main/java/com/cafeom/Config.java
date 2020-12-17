@@ -6,7 +6,7 @@ import androidx.fragment.app.FragmentTransaction;
 import android.os.Bundle;
 import android.view.Window;
 
-public class Config extends AppCompatActivity implements ConfigLogin.OnConfigLoginListener,
+public class Config extends AppAct implements ConfigLogin.OnConfigLoginListener,
     ConfigCnf.OnConfigCnfListener{
 
     private static final String frsLogin = "frlogin";
@@ -17,8 +17,6 @@ public class Config extends AppCompatActivity implements ConfigLogin.OnConfigLog
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);//will hide the title
-        getSupportActionBar().hide();
         setContentView(R.layout.activity_config);
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.fragment, frLogin, frsLogin);
@@ -26,8 +24,13 @@ public class Config extends AppCompatActivity implements ConfigLogin.OnConfigLog
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    @Override
     public void login(String s) {
-        if (s.equals(Cnf.getString(this, "cnf_password"))) {
+        if (s.equals(Cnf.getString("cnf_password"))) {
             FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
             fragmentTransaction.replace(R.id.fragment, frCnf, frsCnf);
             fragmentTransaction.commit();

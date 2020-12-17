@@ -4,6 +4,7 @@
     <string name="Ready">Պատրաստ է</string>
     <string name="Cooking">Խոհանոց</string>
     <string name="Enter">Մուտք</string>
+    <string name="Username">Օգտագործող</string>
     <string name="Password">Գախտնաբար</string>
     <string name="ServerAddress">Սերվերի հասցե</string>
     <string name="ServerPort">Սերվերի պորտ</string>
@@ -20,6 +21,21 @@
     <string name="Executing">Կատարվում է</string>
     <string name="NO">ՈՉ</string>
     <string name="YES">ԱՅՈ</string>
+    <string name="Error">Սխալ</string>
+    <string name="OrderServer">Պատվերների սերվեր</string>
+    <string name="NewOrder">Նոր պատվեր</string>
+    <string name="ViewOrders">Դիտել պատվերները</string>
+    <string name="Quantity">Քանակ</string>
+    <string name="BranchNameEmpty">Օբյեկտը նշված չէ</string>
+    <string name="StoreNameEmpty">Պահեստը նշված չէ</string>
+    <string name="Correction">Ուղղում</string>
+    <string name="EmptyOrder">Պատվերը դատարկ է</string>
+    <string name="SelectBranch">Ընտրեք պահեստը</string>
+    <string name="Branch">Սրճարան</string>
+    <string name="Storage">Պահեստ</string>
+    <string name="PartnerOrders">Պատվերներ առաքիչներին</string>
+    <string name="Empty"></string>
+    <string name="SendToPartner">Ուղարկել՞ առաքիչին</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
