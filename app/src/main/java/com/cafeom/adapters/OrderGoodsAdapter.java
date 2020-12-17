@@ -11,10 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.cafeom.GoodsOrder;
 import com.cafeom.R;
 import com.cafeom.data.GoodsData;
-import com.cafeom.databinding.ItemGoodsOrderBinding;
 import com.cafeom.databinding.ItemGoodsOrderReviewBinding;
-
-import java.util.List;
 
 public class OrderGoodsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -53,6 +50,8 @@ public class OrderGoodsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             bind.add.setOnClickListener(this);
             bind.cancel.setOnClickListener(this);
             bind.remove.setOnClickListener(this);
+            bind.hc.setOnClickListener(this);
+            bind.hc.setVisibility(View.GONE);
         }
 
         public void onBind(int index) {
@@ -77,6 +76,7 @@ public class OrderGoodsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             switch (Integer.valueOf(g.f_stateid)) {
                 case 1:
                     bind.qty.setEnabled(false);
+                    bind.hc.setVisibility(View.VISIBLE);
                     break;
             }
         }
@@ -107,6 +107,8 @@ public class OrderGoodsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                 case R.id.remove:
                     mOrder.mOrderData.mGoodsOrder.remove(getAdapterPosition());
                     notifyDataSetChanged();
+                    break;
+                case R.id.hc:
                     break;
             }
         }

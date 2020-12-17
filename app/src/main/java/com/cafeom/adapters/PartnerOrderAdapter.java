@@ -14,10 +14,12 @@ import com.cafeom.Cnf;
 import com.cafeom.Dialog;
 import com.cafeom.R;
 import com.cafeom.WebService;
+import com.cafeom.data.DataParser;
 import com.cafeom.data.GoodsData;
 import com.cafeom.data.PartnerOrderData;
 import com.cafeom.databinding.ItemPartnerOrderBinding;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import java.util.List;
 
@@ -88,15 +90,22 @@ public class PartnerOrderAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                                     List<GoodsData> goods = PartnerOrderData.mInstance.data.get(partner);
                                     JsonArray ja = new JsonArray();
                                     for (GoodsData g: goods) {
-                                        ja.add(g.f_recid);
+                                        if (Integer.valueOf(g.f_deliver) > 0) {
+                                            ja.add(DataParser.gson().toJsonTree(g));
+                                        }
                                     }
-                                    WebService.Request r = new WebService.Request(Cnf.getString("net_server"), 5, WebService.mMethodPOST);
-                                    r.mParamers.put("sid", Cnf.getString("sid"));
-                                    r.mParamers.put("id", ja.toString());
-                                    r.mParamers.put("view", "uploadtopartner");
-                                    r.go();
-                                    PartnerOrderData.mInstance.data.clear();
-                                    notifyDataSetChanged();
+                                    if (ja.size() == 0) {
+                                        Dialog.alertDialog(bind.getRoot().getContext(), R.string.Empty, R.string.NothigToSend);
+                                    } else {
+                                        WebService.Request r = new WebService.Request(Cnf.getString("net_server"), 5, WebService.mMethodPOST);
+                                        r.mParamers.put("sid", Cnf.getString("sid"));
+                                        r.mParamers.put("goods", ja.toString());
+                                        r.mParamers.put("view", "uploadtopartner");
+                                        r.go();
+                                        PartnerOrderData.mInstance.data.clear();
+                                        mSelectedIndex = -1;
+                                        notifyDataSetChanged();
+                                    }
                                     break;
                                 case DialogInterface.BUTTON_NEGATIVE:
                                     //No button clicked

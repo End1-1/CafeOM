@@ -62,7 +62,7 @@ public class MainActivity extends AppAct implements View.OnClickListener {
         bind = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(bind.getRoot());
         /*TEMP*/
-        Cnf.setString("net_server", "https://10.1.0.2");
+        Cnf.setString("net_server", "https://195.191.155.164:29999");
         /*END TEMP*/
         //Cnf.setString(this, "cnf_password", "111");
         //Cnf.setString(this, "server_address", "10.1.0.2");
