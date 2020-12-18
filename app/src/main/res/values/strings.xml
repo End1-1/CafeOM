@@ -38,6 +38,7 @@
     <string name="SendToPartner">Ուղարկել՞ առաքիչին</string>
     <string name="HC">ՀԾ</string>
     <string name="NothigToSend">Ոչինչ չի ուղարկվելու</string>
+    <string name="ExportToArmSoft">Արտահանել ՀԾ</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
