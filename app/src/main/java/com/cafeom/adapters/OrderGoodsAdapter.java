@@ -73,16 +73,23 @@ public class OrderGoodsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             bind.unit.setText(g.f_unit);
             bind.unit1.setText(g.f_unit);
             bind.unit2.setText(g.f_unit);
+            int hc_drawable = R.drawable.btn_border;
             switch (Integer.valueOf(g.f_stateid)) {
                 case 1:
                     bind.qty.setEnabled(false);
                     bind.hc.setVisibility(View.VISIBLE);
                     break;
+                case 2:
+                    bind.hc.setVisibility(View.VISIBLE);
+                    hc_drawable = R.drawable.btn_border_colored;
+                    break;
             }
+            bind.hc.setBackground(bind.getRoot().getContext().getDrawable(hc_drawable));
         }
 
         @Override
         public void onClick(View view) {
+            GoodsData g = mOrder.mOrderData.mGoodsOrder.get(getAdapterPosition());
             switch (view.getId()) {
                 case R.id.plus:
                     notifyItemChanged(mSelectedIndex);
@@ -96,7 +103,6 @@ public class OrderGoodsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                     if (Double.valueOf(bind.qty.getText().toString()) < 0.001) {
                         return;
                     }
-                    GoodsData g = mOrder.mOrderData.mGoodsOrder.get(getAdapterPosition());
                     g.f_qty = bind.qty.getText().toString();
                     g.f_correct = bind.qtyCorrection.getText().toString();
                     bind.qty.setText("");
@@ -109,6 +115,16 @@ public class OrderGoodsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                     notifyDataSetChanged();
                     break;
                 case R.id.hc:
+                    switch (Integer.valueOf(g.f_stateid)) {
+                        case 1:
+                            g.f_stateid = "2";
+                            notifyItemChanged(getAdapterPosition());
+                            break;
+                        case 2:
+                            g.f_stateid = "1";
+                            notifyItemChanged(getAdapterPosition());
+                            break;
+                    }
                     break;
             }
         }

@@ -11,6 +11,7 @@ import com.cafeom.fragments.FrGoodsContens;
 import com.cafeom.fragments.FrOrderGoods;
 import com.cafeom.fragments.FrOrderLogin;
 import com.cafeom.fragments.FrPartnersOrders;
+import com.cafeom.fragments.FrPartnersOrdersHC;
 import com.cafeom.fragments.FrSearchGoods;
 import com.cafeom.fragments.FrSelectBranch;
 import com.cafeom.fragments.FrViewOrders;
@@ -62,6 +63,10 @@ public class GoodsOrder extends AppAct {
 
     public void partnersOrders() {
         replaceFragment(FrPartnersOrders.newInstance(FrPartnersOrders.class));
+    }
+
+    public void partnersOrdersHC() {
+        replaceFragment(FrPartnersOrdersHC.newInstance(FrPartnersOrdersHC.class));
     }
 
     public void searchFragment() {

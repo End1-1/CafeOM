@@ -5,7 +5,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
 import java.lang.reflect.Type;
-import java.util.List;
 
 public class DataParser {
 

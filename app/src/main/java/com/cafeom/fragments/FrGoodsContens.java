@@ -24,6 +24,7 @@ public class FrGoodsContens extends FragmentGoodsOrder {
         bind.neworder.setOnClickListener(this);
         bind.vieworders.setOnClickListener(this);
         bind.partnerorders.setOnClickListener(this);
+        bind.armsoft.setOnClickListener(this);
         return bind.getRoot();
     }
 
@@ -48,6 +49,9 @@ public class FrGoodsContens extends FragmentGoodsOrder {
                 break;
             case R.id.partnerorders:
                 mOrder.partnersOrders();
+                break;
+            case R.id.armsoft:
+                mOrder.partnersOrdersHC();
                 break;
         }
     }
