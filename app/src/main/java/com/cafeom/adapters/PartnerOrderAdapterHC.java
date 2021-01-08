@@ -99,7 +99,7 @@ public class PartnerOrderAdapterHC extends RecyclerView.Adapter<RecyclerView.Vie
                                         WebService.Request r = new WebService.Request(Cnf.getString("net_server"), 5, WebService.mMethodPOST);
                                         r.mParamers.put("sid", Cnf.getString("sid"));
                                         r.mParamers.put("goods", ja.toString());
-                                        r.mParamers.put("view", "uploadtopartner");
+                                        r.mParamers.put("view", "uploadhc");
                                         r.go();
                                         PartnerOrderData.mInstance.data.clear();
                                         mSelectedIndex = -1;

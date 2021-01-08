@@ -115,6 +115,8 @@ public class OrderGoodsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                     notifyDataSetChanged();
                     break;
                 case R.id.hc:
+                    g.f_qty = bind.qty.getText().toString();
+                    g.f_correct = bind.qtyCorrection.getText().toString();
                     switch (Integer.valueOf(g.f_stateid)) {
                         case 1:
                             g.f_stateid = "2";

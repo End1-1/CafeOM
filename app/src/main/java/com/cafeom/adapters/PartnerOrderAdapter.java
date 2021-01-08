@@ -1,7 +1,10 @@
 package com.cafeom.adapters;
 
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.ResolveInfo;
 import android.graphics.Color;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,6 +25,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import java.util.List;
+import java.util.Locale;
 
 public class PartnerOrderAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -89,14 +93,49 @@ public class PartnerOrderAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                                 case DialogInterface.BUTTON_POSITIVE:
                                     List<GoodsData> goods = PartnerOrderData.mInstance.data.get(partner);
                                     JsonArray ja = new JsonArray();
+                                    String viber = "";
                                     for (GoodsData g: goods) {
                                         if (Integer.valueOf(g.f_deliver) > 0) {
                                             ja.add(DataParser.gson().toJsonTree(g));
+                                            if (g.f_deliver.equals("2")) {
+                                                viber += g.f_goods + ": " + g.f_qty + "\r\n";
+                                            }
                                         }
                                     }
                                     if (ja.size() == 0) {
                                         Dialog.alertDialog(bind.getRoot().getContext(), R.string.Empty, R.string.NothigToSend);
                                     } else {
+
+                                        if (!viber.isEmpty()) {
+                                            boolean found = false;
+                                            Intent share = new Intent(android.content.Intent.ACTION_SEND);
+                                            share.setType("text/plain");
+
+                                            // gets the list of intents that can be loaded.
+                                            List<ResolveInfo> resInfo = bind.getRoot().getContext().getPackageManager()
+                                                    .queryIntentActivities(share, 0);
+                                            if (!resInfo.isEmpty()) {
+                                                for (ResolveInfo info : resInfo) {
+                                                    if (info.activityInfo.packageName.toLowerCase(
+                                                            Locale.getDefault()).contains("com.viber.voip")
+                                                            || info.activityInfo.name.toLowerCase(
+                                                            Locale.getDefault()).contains("com.viber.voip")) {
+                                                        share.putExtra(Intent.EXTRA_TEXT, viber);
+                                                        share.setPackage(info.activityInfo.packageName);
+                                                        found = true;
+                                                        VH.this.bind.getRoot().getContext().startActivity(Intent.createChooser(share, "Select"));
+                                                        break;
+                                                    }
+                                                }
+                                                if (!found) {
+                                                    Uri marketUri = Uri.parse("market://details?id="
+                                                            + "com.viber.voip");
+                                                    Intent marketIntent = new Intent(Intent.ACTION_VIEW, marketUri);
+                                                    VH.this.bind.getRoot().getContext().startActivity(marketIntent);
+                                                }
+                                            }
+                                        }
+
                                         WebService.Request r = new WebService.Request(Cnf.getString("net_server"), 5, WebService.mMethodPOST);
                                         r.mParamers.put("sid", Cnf.getString("sid"));
                                         r.mParamers.put("goods", ja.toString());
