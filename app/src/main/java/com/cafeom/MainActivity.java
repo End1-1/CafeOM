@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TreeMap;
 
 public class MainActivity extends AppAct implements View.OnClickListener {
@@ -45,6 +47,7 @@ public class MainActivity extends AppAct implements View.OnClickListener {
     private boolean first = true;
     private boolean stopThread = false;
     private static int mRequestCount = 0;
+    private static int mCheckConn = 0;
 
     public MainActivity() {
         mCookItems = new TreeMap<>();
@@ -106,6 +109,13 @@ public class MainActivity extends AppAct implements View.OnClickListener {
     @Override
     protected void onStart() {
         super.onStart();
+        timer.schedule(timerTask, 0, 1000);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        timer.cancel();
     }
 
     @Override
@@ -554,6 +564,8 @@ public class MainActivity extends AppAct implements View.OnClickListener {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
+                                mCheckConn = 0;
+                                bind.llConnState.setVisibility(View.GONE);
                                 if (items.size() > 0) {
                                     if (mRequestCount > 0) {
                                         canUpdate = false;
@@ -598,4 +610,22 @@ public class MainActivity extends AppAct implements View.OnClickListener {
         dlg.show();
         return dlg;
     }
+
+    private TimerTask timerTask = new TimerTask() {
+        @Override
+        public void run() {
+            mCheckConn++;
+            if (mCheckConn > 10) {
+                runOnUiThread(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            bind.llConnState.setVisibility(View.VISIBLE);
+                        }
+                    }
+                );
+            }
+        }
+    };
+    private Timer timer = new Timer();
 }
