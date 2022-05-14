@@ -5,14 +5,12 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.media.MediaPlayer;
-import android.opengl.Visibility;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
@@ -48,6 +46,7 @@ public class MainActivity extends AppAct implements View.OnClickListener {
     private boolean stopThread = false;
     private static int mRequestCount = 0;
     private static int mCheckConn = 0;
+    private Timer timer;
 
     public MainActivity() {
         mCookItems = new TreeMap<>();
@@ -109,7 +108,24 @@ public class MainActivity extends AppAct implements View.OnClickListener {
     @Override
     protected void onStart() {
         super.onStart();
-        timer.schedule(timerTask, 0, 1000);
+        timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                mCheckConn++;
+                if (mCheckConn > 10) {
+                    runOnUiThread(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    bind.llConnState.setVisibility(View.VISIBLE);
+                                    playSound(R.raw.waterdrop);
+                                }
+                            }
+                    );
+                }
+            }
+        }, 0, 1000);
     }
 
     @Override
@@ -461,6 +477,11 @@ public class MainActivity extends AppAct implements View.OnClickListener {
                 createCookItemDlg(e.getMessage(), null);
                 createCookItemDlg(s, null);
             }
+            if (requestCode == 4 || requestCode == 3 || requestCode == 2) {
+                if (mRequestCount > 0) {
+                    mRequestCount--;
+                }
+            }
             return;
         }
         try {
@@ -610,22 +631,4 @@ public class MainActivity extends AppAct implements View.OnClickListener {
         dlg.show();
         return dlg;
     }
-
-    private TimerTask timerTask = new TimerTask() {
-        @Override
-        public void run() {
-            mCheckConn++;
-            if (mCheckConn > 10) {
-                runOnUiThread(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            bind.llConnState.setVisibility(View.VISIBLE);
-                        }
-                    }
-                );
-            }
-        }
-    };
-    private Timer timer = new Timer();
 }
