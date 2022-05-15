@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.cafeom">
 
+    <uses-sdk tools:overrideLibrary="androidx.camera.camera2, androidx.camera.core, androidx.camera.view, androidx.camera.lifecycle" />
+
+    <uses-feature android:name="android.hardware.camera" />
+
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -16,13 +22,13 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".GoodsOrder"></activity>
         <activity
             android:name=".PlayMusicActivity"
             android:label="@string/title_activity_play_music"
             android:theme="@style/AppTheme.NoActionBar" />
-        <activity android:name=".Config" />
-        <activity android:name=".MainActivity">
+        <activity android:name=".ActivityCodeReader" />
+        <activity android:name=".MainActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -30,7 +36,8 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".WebService"
+        <service android:name=".common.AppService"
+            android:enabled="true"
             android:exported="true" />
     </application>
 
