@@ -23,11 +23,15 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
+            android:name=".NetworkLogActivity"
+            android:exported="false" />
+        <activity
             android:name=".PlayMusicActivity"
             android:label="@string/title_activity_play_music"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity android:name=".ActivityCodeReader" />
-        <activity android:name=".MainActivity"
+        <activity
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -36,7 +40,8 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".common.AppService"
+        <service
+            android:name=".common.AppService"
             android:enabled="true"
             android:exported="true" />
     </application>

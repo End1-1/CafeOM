@@ -15,10 +15,10 @@ import androidx.core.content.ContextCompat;
 
 import com.cafeom.databinding.ActivityCodeReaderBinding;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.mlkit.vision.barcode.Barcode;
 import com.google.mlkit.vision.barcode.BarcodeScanner;
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
 import com.google.mlkit.vision.barcode.BarcodeScanning;
+import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.common.InputImage;
 
 import java.util.List;
@@ -51,7 +51,10 @@ public class ActivityCodeReader extends ActivityClass {
             ProcessCameraProvider cameraProvider = ProcessCameraProvider.getInstance(this).get();
             Preview preview = new Preview.Builder().build();
             preview.setSurfaceProvider(_b.preview.getSurfaceProvider());
-            ImageAnalysis imageAnalysis = new ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build();
+            ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
+                    .build();
             imageAnalysis.setAnalyzer(mExecutor, new CodeAnalizer());
             CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
             cameraProvider.unbindAll();
@@ -72,7 +75,7 @@ public class ActivityCodeReader extends ActivityClass {
             Image img = image.getImage();
             if (img != null) {
                 InputImage inputImage = InputImage.fromMediaImage(img, image.getImageInfo().getRotationDegrees());
-                BarcodeScannerOptions options = new BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS).build();
+                BarcodeScannerOptions options = new BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build();
                 BarcodeScanner scanner = BarcodeScanning.getClient(options);
                 scanner.process(inputImage).addOnSuccessListener(new OnSuccessListener<List<Barcode>>() {
                     @Override

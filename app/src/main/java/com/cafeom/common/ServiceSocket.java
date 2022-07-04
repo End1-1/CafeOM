@@ -39,6 +39,7 @@ public class ServiceSocket {
     private SocketThread mSocketThread;
     private boolean mStopped = false;
     private boolean mConnected = false;
+    private boolean mResetConnection = false;
     public BlockingDeque<byte[]> mMessageBuffer = new LinkedBlockingDeque<>();
 
     public ServiceSocket() {
@@ -103,6 +104,17 @@ public class ServiceSocket {
                 SSLSocketFactory sf = sslSocketFactory();
                 SSLSocketFactory factory = sf; //(SSLSocketFactory) SSLSocketFactory.getDefault();
                 SSLSocket socket = (SSLSocket) factory.createSocket();
+                if (Cnf.getString("server_address").isEmpty()) {
+                    Thread.sleep(2000);
+//                    Runnable r = new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            startSocketThread();
+//                        }
+//                    };
+//                    new Thread(r).start();
+//                    return;
+                }
                 socket.connect(new InetSocketAddress(Cnf.getString("server_address"), Integer.valueOf(Cnf.getString("server_port"))), 3000);
                 socket.setSoTimeout(3000);
                 socket.startHandshake();
@@ -135,6 +147,7 @@ public class ServiceSocket {
                 SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss", Locale.getDefault());
                 System.out.println(df.format(c));
                 e.printStackTrace();
+                Cnf.setString("last_network_error", e.getMessage());
             }
 
             mConnected = false;
@@ -231,7 +244,8 @@ public class ServiceSocket {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            } while (!mIsStopped && !Thread.currentThread().isInterrupted() && !mStopped);
+            } while (!mIsStopped && !Thread.currentThread().isInterrupted() && !mResetConnection);
+            mResetConnection = false;
             mBuffer = null;
             mBufferPos = 0;
             mBytesLeft = 0;
@@ -254,6 +268,9 @@ public class ServiceSocket {
         public void onReceive(Context context, Intent intent) {
             if (intent.getBooleanExtra("local", false)) {
                 switch (intent.getShortExtra("type", (short) 0)) {
+                    case MessageList.reset_connection:
+                        mResetConnection = true;
+                        break;
                     case MessageList.check_connection:
                         if (intent.getBooleanExtra("request", false)) {
                             Intent connectionStatusIntent = new Intent(MessageMaker.BROADCAST_DATA);

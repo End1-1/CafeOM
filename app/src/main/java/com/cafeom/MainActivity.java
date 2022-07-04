@@ -13,7 +13,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResult;
@@ -36,12 +35,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -76,29 +71,20 @@ public class MainActivity extends ActivityClass {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         _b = ActivityMainBinding.inflate(getLayoutInflater());
+        _b.tvDept.setOnClickListener(this);
         setContentView(_b.getRoot());
         if (Cnf.getString("uuid").isEmpty()) {
             Cnf.setString("uuid", UUID.randomUUID().toString());
         }
         TextView tvDept = findViewById(R.id.tvDept);
-        String reminerId = Cnf.getString("reminder_id");
+        String reminerId = Cnf.getString("server_store");
         if (reminerId == null) {
             reminerId = "0";
         }
         if (reminerId.isEmpty()) {
             reminerId = "0";
         }
-        switch (Integer.valueOf(reminerId)) {
-            case 0:
-                tvDept.setText("*");
-                break;
-            case 1:
-                tvDept.setText(getString(R.string.Kitchen));
-                break;
-            case 2:
-                tvDept.setText(getString(R.string.Bar));
-                break;
-        }
+        setStorageName(reminerId);
         NotificationSender.cancelAll(this);
 
         mDishAdapter = new DishAdapters();
@@ -177,6 +163,10 @@ public class MainActivity extends ActivityClass {
                 Intent intent = new Intent(this, ActivityCodeReader.class);
                 mCodeResult.launch(intent);
                 break;
+            case R.id.tvDept:
+                Intent netErrorIntent = new Intent(this, NetworkLogActivity.class);
+                startActivity(netErrorIntent);
+                break;
         }
     }
 
@@ -236,6 +226,16 @@ public class MainActivity extends ActivityClass {
             return;
         }
         switch (intent.getShortExtra("type", (short) 0)) {
+            case MessageList.check_connection:
+                if (intent.getBooleanExtra("connected", false)) {
+                    mPlayWaterdrop = true;
+                    mNetworkOk = false;
+                    mCookItems.clear();
+                    mDishAdapter.notifyDataSetChanged();
+                    _b.ivConfig.setImageResource(R.drawable.wifib);
+                    login();
+                }
+                break;
             case MessageList.connection:
                 mPlayWaterdrop = true;
                 mNetworkOk = false;
@@ -327,6 +327,20 @@ public class MainActivity extends ActivityClass {
         }
     }
 
+    private void setStorageName(String reminerId) {
+        switch (Integer.valueOf(reminerId)) {
+            case 0:
+                _b.tvDept.setText("*");
+                break;
+            case 1:
+                _b.tvDept.setText(getString(R.string.Kitchen));
+                break;
+            case 2:
+                _b.tvDept.setText(getString(R.string.Bar));
+                break;
+        }
+    }
+
     public class CookItem {
         String mStaff;
         int mRecord;
@@ -407,6 +421,9 @@ public class MainActivity extends ActivityClass {
                 switch (state) {
                     case 0:
                     case 1:
+                        if (Cnf.getString("server_readyonly").equals("1")) {
+                            return getString(R.string.Ready);
+                        }
                         return getString(R.string.StartCooking);
                     case 2:
                         return getString(R.string.Ready);
@@ -424,7 +441,11 @@ public class MainActivity extends ActivityClass {
                 switch (ci.mState) {
                     case 0:
                     case 1:
-                        messageMaker.putByte((byte) 2);
+                        if (Cnf.getString("server_readyonly").equals("1")) {
+                            messageMaker.putByte((byte) 3);
+                        } else {
+                            messageMaker.putByte((byte) 2);
+                        }
                     case 2:
                         messageMaker.putByte((byte) 3);
                     default:
@@ -532,7 +553,7 @@ public class MainActivity extends ActivityClass {
                     messageMaker.putString("rwjz");
                     messageMaker.putString(Cnf.getString("server_database"));
                     messageMaker.putByte(DllOp.op_get_list);
-                    messageMaker.putInteger(Integer.valueOf(Cnf.getString("reminder_id")).intValue());
+                    messageMaker.putInteger(Integer.valueOf(Cnf.getString("server_store")).intValue());
                     sendMessage(messageMaker);
                 }
             }
@@ -548,14 +569,21 @@ public class MainActivity extends ActivityClass {
                     }
                     String code = activityResult.getData().getStringExtra("code");
                     List<String> params = Arrays.asList(code.split(";"));
-                    if (params.size() == 7) {
-                        Cnf.setString("server_address", params.get(0));
-                        Cnf.setString("server_port", params.get(1));
-                        Cnf.setString("server_username", params.get(2));
-                        Cnf.setString("server_password", params.get(3));
-                        Cnf.setString("server_database", params.get(4));
-                        Cnf.setString("server_store", params.get(5));
-                        Cnf.setString("server_readyonly", params.get(6));
+                    if (params.size() == 8) {
+                        Cnf.setString("server_name", params.get(0));
+                        Cnf.setString("server_address", params.get(1));
+                        Cnf.setString("server_port", params.get(2));
+                        Cnf.setString("server_username", params.get(3));
+                        Cnf.setString("server_password", params.get(4));
+                        Cnf.setString("server_database", params.get(5));
+                        Cnf.setString("server_store", params.get(6));
+                        Cnf.setString("server_readyonly", params.get(7));
+                        setStorageName(params.get(6));
+
+                        Intent intent = new Intent(MessageMaker.BROADCAST_DATA);
+                        intent.putExtra("local", true);
+                        intent.putExtra("type", MessageList.reset_connection);
+                        LocalBroadcastManager.getInstance(MainActivity.this).sendBroadcast(intent);
                     }
                 }
             });

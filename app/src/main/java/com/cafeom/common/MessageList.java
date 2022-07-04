@@ -1,7 +1,8 @@
 package com.cafeom.common;
 
 public class MessageList {
-    public static  final short utils = -5;
+    public static final short reset_connection = -6;
+    public static final short utils = -5;
     public static final short login_status = -4;
     public static final short check_connection = -3;
     public static final short connection = -1;

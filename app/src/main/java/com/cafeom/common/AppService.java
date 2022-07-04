@@ -68,7 +68,7 @@ public class AppService extends Service {
             }
             Intent reply = new Intent(MessageMaker.BROADCAST_DATA);
             switch (intent.getShortExtra("type", (short) 0)) {
-                case com.cafeom.common.MessageList.login_status:
+                case MessageList.login_status:
                     mLoginSuccess = intent.getBooleanExtra("value", false);
                     break;
             }
